@@ -1,35 +1,67 @@
 #!/bin/bash
 
-    apng_file="animate.png"  # Replace this with the actual APNG filename
-    gif_file="converted.gif"  # Replace this with the desired GIF filename
-    apng_url="https://s.w-x.co/staticmaps/wu/wu/wxtype1200_cur/conus/animate.png"  # Replace this with the actual APNG URL
-    webhook_url="webhook here idiot"  # Replace this with your Discord webhook URL
+# Discord Webhook URL
+webhook_url="Webhook Here"
 
-download_apng() {
-    curl -O "$apng_url"
+# Function to send an embed to Discord
+send_embed() {
+    title="$1"
+    description="$2"
+    
+    # Create JSON payload for Discord
+    json_payload='{
+        "embeds": [
+            {
+                "title": "'"$title"'",
+                "description": "'"$description"'"
+            }
+        ]
+    }'
+    
+    # Save JSON payload to a file
+    echo "$json_payload" > temp_payload.json
+    
+    # Send to Discord
+    curl -H "Content-Type: application/json" -X POST -d @"temp_payload.json" "$webhook_url"
+    
+    # Cleanup temp file
+    rm temp_payload.json
 }
 
-# Function to convert APNG to GIF
-convert_to_gif() {
-
-
-    ffmpeg -i "$apng_file" "$gif_file"
+# Function to send an image to Discord
+send_image() {
+    title="$1"
+    url="$2"
+    
+    # Download image
+    curl -o temp.gif "$url"
+    
+    # Send image to Discord
+    send_to_discord "temp.gif" "$title"
+    
+    # Cleanup temp file
+    rm temp.gif
 }
 
-# Function to send the GIF to Discord webhook
+# Function to send a message to Discord with file attachment
 send_to_discord() {
-
-    curl -X POST -H "Content-Type: multipart/form-data" -F "file=@$gif_file" "$webhook_url"
+    gif_file="$1"
+    title="$2"
+    
+    curl -X POST -H "Content-Type: multipart/form-data" -F "file=@$gif_file" -F "content=$title" "$webhook_url"
 }
 
-# Function to clean up
-cleanup() {
+# Send current date and time to Discord in its own embed
+current_date_time=$(date +"%Y-%m-%d %H:%M:%S")
+send_embed "Date and Time" "Current Date and Time: $current_date_time"
+wait
+# Send images and titles as separate embeds
+send_embed "Current Weather Active at 0700 EST" ""
+send_image " " "https://www.wpc.ncep.noaa.gov/noaa/noaad1.gif"
+wait
+send_embed "Tomorrow's Weather" ""
+send_image " " "https://www.wpc.ncep.noaa.gov/noaa/noaad2.gif"
+wait
+send_embed "Weather Forecast for 3 Days" ""
+send_image " " "https://www.wpc.ncep.noaa.gov/noaa/noaad3.gif"
 
-    rm -f "$apng_file" "$gif_file"
-}
-
-# Main script
-download_apng
-convert_to_gif
-send_to_discord
-cleanup     
